@@ -9,9 +9,9 @@ void start_cmd(WCHAR* path)
 {
 	if(GetKeyState(VK_SHIFT) < 0) {
 		wcscat(path, L"\""); *--path = '\"';
-		ShellExecuteW(NULL, NULL, L"explorer", path, 0, SW_SHOW); 
+		ShellExecuteW(NULL, NULL, L"explorer.exe", path, 0, SW_SHOW); 
 	} else {
-		ShellExecuteW(NULL, NULL, L"cmd", 0, path, SW_SHOW); 
+		ShellExecuteW(NULL, NULL, L"cmd.exe", 0, path, SW_SHOW); 
 	}
 }
 

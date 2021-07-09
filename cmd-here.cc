@@ -52,7 +52,7 @@ BOOL CALLBACK EnumWindowsProc(
 }
 
 
-int main()
+int wmain()
 {
 	if(GetKeyState(VK_CONTROL) < 0) { L1:
 	WCHAR path[MAX_PATH]; SHGetFolderPathW(
@@ -60,4 +60,5 @@ int main()
 	start_cmd(path);
 	} else { if(EnumWindows(EnumWindowsProc, 0))
 		goto L1; }
+	return 0;
 }

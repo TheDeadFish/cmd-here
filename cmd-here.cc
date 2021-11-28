@@ -5,13 +5,34 @@
 
 WCHAR cmdExe[] = L"cmd.exe";
 
-void start_cmd(WCHAR* path)
+void forground_check(HWND hwnd, const char* name)
 {
+	if((hwnd == NULL)
+	||(GetAsyncKeyState(VK_MBUTTON) < 0))
+		return;
+	
+	char buff[100];
+	GetClassNameA(hwnd, buff, 100);
+	if(strcmp(name, buff))
+		return;
+		
+	SetForegroundWindow(hwnd);
+	exit(0);
+}
+
+
+
+
+void start_cmd(WCHAR* path, HWND hwnd = NULL)
+{
+
+
 	if(GetKeyState(VK_SHIFT) < 0) {
 		wcscat(path, L"\""); *--path = '\"';
-		ShellExecuteW(NULL, NULL, L"explorer.exe", path, 0, SW_SHOW); 
+		ShellExecuteW(NULL, NULL, L"explorer", path, 0, SW_SHOW); 
 	} else {
-		ShellExecuteW(NULL, NULL, L"cmd.exe", 0, path, SW_SHOW); 
+		forground_check(hwnd, "ConsoleWindowClass");
+		ShellExecuteW(NULL, NULL, L"cmd", 0, path, SW_SHOW); 
 	}
 }
 
@@ -47,7 +68,7 @@ BOOL CALLBACK EnumWindowsProc(
 	|| (text[len] == '/')) break; }
 	text[len] = 0; }
 	atrb = GetFileAttributesW(text);
-	if(atrb >= 0) { start_cmd(text);
+	if(atrb >= 0) { start_cmd(text, hwnd);
 	return FALSE; }}} return TRUE;
 }
 

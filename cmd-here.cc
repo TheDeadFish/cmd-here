@@ -3,36 +3,39 @@
 #include <windows.h>
 #include <shlobj.h>
 
-WCHAR cmdExe[] = L"cmd.exe";
+struct WndList {
+	HWND hwnd;
+	WCHAR* path;
+};
 
-void forground_check(HWND hwnd, const char* name)
+bool flag_duplicate;
+bool flag_explorer;
+LPCSTR wndClass = "ConsoleWindowClass";
+WCHAR path[MAX_PATH];
+WndList wndList[256];
+int nWndList;
+
+void start_cmd(WCHAR* path)
 {
-	if((hwnd == NULL)
-	||(GetAsyncKeyState(VK_MBUTTON) < 0))
-		return;
-	
-	char buff[100];
-	GetClassNameA(hwnd, buff, 100);
-	if(strcmp(name, buff))
-		return;
-		
-	SetForegroundWindow(hwnd);
-	exit(0);
-}
-
-
-
-
-void start_cmd(WCHAR* path, HWND hwnd = NULL)
-{
-
-
-	if(GetKeyState(VK_SHIFT) < 0) {
+	if(flag_explorer) {
 		wcscat(path, L"\""); *--path = '\"';
 		ShellExecuteW(NULL, NULL, L"explorer", path, 0, SW_SHOW); 
 	} else {
-		forground_check(hwnd, "ConsoleWindowClass");
 		ShellExecuteW(NULL, NULL, L"cmd", 0, path, SW_SHOW); 
+	}
+}
+
+void add_path(WCHAR* str, HWND hwnd)
+{
+	if(path[0] == 0)
+		wcscpy(path, str);
+
+	char buff[100];
+	GetClassNameA(hwnd, buff, 100);
+	if(!strcmp(buff, wndClass)) {
+		wndList[nWndList].hwnd = hwnd;
+		wndList[nWndList].path = wcsdup(str);
+		nWndList++;
 	}
 }
 
@@ -68,18 +71,32 @@ BOOL CALLBACK EnumWindowsProc(
 	|| (text[len] == '/')) break; }
 	text[len] = 0; }
 	atrb = GetFileAttributesW(text);
-	if(atrb >= 0) { start_cmd(text, hwnd);
-	return FALSE; }}} return TRUE;
+	if(atrb >= 0) add_path(text, hwnd); }}
+	return TRUE;
 }
-
 
 int wmain()
 {
-	if(GetKeyState(VK_CONTROL) < 0) { L1:
-	WCHAR path[MAX_PATH]; SHGetFolderPathW(
-		0, 0x10, NULL, 0, path);
+	flag_duplicate = GetAsyncKeyState(VK_MBUTTON) < 0;
+	flag_explorer = GetKeyState(VK_SHIFT) < 0;
+	if(flag_explorer)
+		wndClass = "CabinetWClass";
+
+	if(GetKeyState(VK_CONTROL) < 0)
+		SHGetFolderPathW(0, 0x10, NULL, 0, path);
+	EnumWindows(EnumWindowsProc, 0);
+	if(path[0] == 0)
+		SHGetFolderPathW(0, 0x10, NULL, 0, path);
+
+	if(!flag_duplicate) {
+		for(int i = 0; wndList[i].hwnd; i++) {
+			if(!lstrcmpW(wndList[i].path, path)) {
+				SetForegroundWindow(wndList[i].hwnd);
+				return 0;
+			}
+		}
+	}
+
 	start_cmd(path);
-	} else { if(EnumWindows(EnumWindowsProc, 0))
-		goto L1; }
 	return 0;
 }
